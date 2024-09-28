@@ -1,3 +1,3 @@
 # YouTube Converter
 
-I am creating a standalone command-line YouTube converter that doesn't play ads
+I am creating a standalone YouTube converter with a graphical user interface (tkinter) that doesn't play ads

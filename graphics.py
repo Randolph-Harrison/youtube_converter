@@ -1,34 +1,31 @@
 import tkinter as tk
+from tkinter import filedialog
 
-class Application(tk.Tk):
+
+class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Youtube Converter")
-        self.geometry("800x600")
-        self.frame_url = AppFrame(self)
-        self.frame_url.grid(row=0, column=0)
-
-        self.frame_file_path = AppFrame(self)
-        self.frame_file_path.grid(row=1, column=0)
-
-        self.frame_progress_bar = AppFrame(self)
-        self.frame_progress_bar.grid(row=2, column=0)
+        self.title('YouTube Converter')
+        self.minsize(800, 600)
 
         self.mainloop()
+        
+class Frame_URL(tk.Frame):
+    def __init__(self, parent):
+        super().__init__(parent, pady=20)
+        tk.Label(self, text='Paste YouTube URL:').grid(row=0, column=0)
+        self.entry = tk.Entry(self).grid(row=0, column=1, sticky='nsew', padx=20)
 
-class AppFrame(tk.Frame):
-    def __init__(self, root):
-        super().__init__(root)
-
-        self.button1 = AppButton(self)
-
-        self.button1.grid(row=0, column=0)
-
-class AppButton(tk.Button):
-    def __init__(self, frame):
-        super().__init__(frame, text='button1')
+        self.url_buttom = tk.Button(self, text='Submit').grid(row=0, column=2)
 
 
+
+        self.grid(row=0, column=0)
+        self.url = None
+    
+    def entry_get(self):
+        self.url = self.entry.get()
+        print(self.url)
 
 
 
