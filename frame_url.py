@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog
+from tkinter import ttk
 from pytubefix import YouTube
 import requests
 import re
@@ -34,6 +35,12 @@ class Frame_URL(tk.Frame):
         self.download_button = tk.Button(self, text='Download', command=self.download, state='disabled')
         self.download_button.grid(row=2, column=1, pady=10)
 
+        self.progress_bar = ttk.Progressbar(self, orient=tk.HORIZONTAL, length=450, mode='determinate')
+        self.progress_bar.grid(row=4, column=1)
+        self.progress_label = tk.Label(self)
+        self.progress_label.grid(row=5, column=1)
+
+        self.grid(row=1, column=0)
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=2)
         self.columnconfigure(2, weight=1)
@@ -49,7 +56,7 @@ class Frame_URL(tk.Frame):
                 self.display_url.config(text=f'Valid link: {self.url}')
                 self.entry.delete(0, tk.END)
 
-                self.yt = YouTube(self.url)
+                self.yt = YouTube(self.url, on_progress_callback=self.on_progress)
 
                 for stream in self.yt.streams.filter(only_video=True).desc():
                     if stream.resolution not in self.resolutions:
@@ -68,6 +75,14 @@ class Frame_URL(tk.Frame):
     def get_directory(self):
         self.directory = filedialog.askdirectory(title='Select a folder')
         self.display_directory.config(text=self.directory)
+    
+    def on_progress(self, stream, chunk, bytes_remaining):
+        total_size = stream.filesize
+        bytes_downloaded = total_size - bytes_remaining
+        percent_complete = (bytes_downloaded / total_size) * 100
+
+        self.progress_bar['value'] = percent_complete
+        self.update_idletasks()
 
     def download(self):
         if self.yt is None:
@@ -75,6 +90,9 @@ class Frame_URL(tk.Frame):
         if self.directory is None:
             self.display_directory.config(text='No directory selected')
         else:
+            self.progress_label.config(text='Downloading...')
+            self.progress_bar['value'] = 0
+
             resolution = self.selected_option.get()
             audio_stream = self.yt.streams.filter(only_audio=True).order_by('abr').desc().first()
             audio_stream.download(output_path=self.directory, filename='audio.mp4')
@@ -82,11 +100,13 @@ class Frame_URL(tk.Frame):
             video_stream = self.yt.streams.filter(progressive=False, only_video=True, res=resolution).first()
             video_stream.download(output_path=self.directory, filename='video.mp4')
 
+            self.progress_label.config(text='Finishing up...')
             os.chdir(self.directory)
             os.system(f"ffmpeg -i video.mp4 -i audio.mp4 -c:v copy -c:a aac -shortest '{self.yt.title}.mp4'")
-
             if os.name == 'posix':
                 os.system('rm video.mp4 audio.mp4')
             else:
                 os.system('del video.mp4 audio.mp4')
+            
+            self.progress_label.config(text='Complete')
 
