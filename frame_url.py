@@ -12,30 +12,32 @@ class Frame_URL(tk.Frame):
         self.directory = None
         self.yt = None
         self.resolutions = ['144p']
+        self.resolution_menu = None
 
         self.selected_option = tk.StringVar(self)
         self.selected_option.set("144p")
 
         tk.Label(self, text='Paste YouTube URL:').grid(row=0, column=0)
         self.entry = tk.Entry(self, width=50)
-        self.entry.grid(row=0, column=1, sticky='ew', padx=20)
+        self.entry.grid(row=0, column=1, padx=20)
         self.display_url = tk.Label(self)
         self.display_url.grid(row=1, column=1)
 
         self.check_button= tk.Button(self, text='Check URL', command=self.url_check)
-        self.check_button.grid(row=0, column=2, padx=10)
+        self.check_button.grid(row=0, column=2, padx=5)
 
         self.directory_button = tk.Button(self, text='Browse', command=self.get_directory)
-        self.directory_button.grid(row=0, column=3)
+        self.directory_button.grid(row=0, column=3, padx=5, sticky='e')
+        self.display_directory = tk.Label(self)
+        self.display_directory.grid(row=3, column=1)
 
-
-        # Will probably implement to only show a download button if the check goes through
         self.download_button = tk.Button(self, text='Download', command=self.download, state='disabled')
         self.download_button.grid(row=2, column=1, pady=10)
 
-        self.columnconfigure(1, weight=1)
-        self.columnconfigure(0, weight=0)
-        self.columnconfigure(3, weight=0)
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=2)
+        self.columnconfigure(2, weight=1)
+        self.columnconfigure(3, weight=1)
         self.grid(row=0, column=0, padx=20)
     
     def url_check(self):
@@ -57,19 +59,21 @@ class Frame_URL(tk.Frame):
                 self.resolution_menu = tk.OptionMenu(self, self.selected_option, *self.resolutions)
                 self.resolution_menu.grid(row=2, column=0)
         else:
-            self.resolution_menu.grid_forget()
+            if self.resolution_menu is not None:
+                self.resolution_menu.grid_forget()
             self.download_button.config(state='disabled')
             self.display_url.config(text="No URL was entered or invalid YouTube video link")
             self.entry.delete(0, tk.END)
     
     def get_directory(self):
         self.directory = filedialog.askdirectory(title='Select a folder')
-        self.display_directory = tk.Label(self, text=self.directory)
-        self.display_directory.grid(row=3, column=1)
+        self.display_directory.config(text=self.directory)
 
     def download(self):
         if self.yt is None:
             self.url_check()
+        if self.directory is None:
+            self.display_directory.config(text='No directory selected')
         else:
             resolution = self.selected_option.get()
             audio_stream = self.yt.streams.filter(only_audio=True).order_by('abr').desc().first()
