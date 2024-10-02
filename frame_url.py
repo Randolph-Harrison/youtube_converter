@@ -5,6 +5,8 @@ from pytubefix import YouTube
 import requests
 import re
 import os
+import sys
+import subprocess
 
 class Frame_URL(tk.Frame):
     def __init__(self, parent):
@@ -76,6 +78,7 @@ class Frame_URL(tk.Frame):
         self.directory = filedialog.askdirectory(title='Select a folder')
         self.display_directory.config(text=self.directory)
     
+    # This function is for the progress bar, don't really understand it
     def on_progress(self, stream, chunk, bytes_remaining):
         total_size = stream.filesize
         bytes_downloaded = total_size - bytes_remaining
@@ -83,6 +86,16 @@ class Frame_URL(tk.Frame):
 
         self.progress_bar['value'] = percent_complete
         self.update_idletasks()
+
+    def get_ffmpeg_path(self):
+        if getattr(sys, 'frozen', False):
+            # If the program is packaged with PyInstaller, get the path relative to the executable
+            ffmpeg_dir = os.path.join(sys._MEIPASS, "ffmpeg")
+        else:
+            # Otherwise, use the path relative to the script
+            ffmpeg_dir = os.path.join(os.path.dirname(__file__), "ffmpeg")
+        
+        return os.path.join(ffmpeg_dir, 'ffmpeg.exe' if os.name == 'nt' else 'ffmpeg')
 
     def download(self):
         if self.yt is None:
@@ -92,6 +105,7 @@ class Frame_URL(tk.Frame):
         else:
             self.progress_label.config(text='Downloading...')
             self.progress_bar['value'] = 0
+            ffmpeg_path = self.get_ffmpeg_path()
 
             resolution = self.selected_option.get()
             audio_stream = self.yt.streams.filter(only_audio=True).order_by('abr').desc().first()
@@ -101,8 +115,9 @@ class Frame_URL(tk.Frame):
             video_stream.download(output_path=self.directory, filename='video.mp4')
 
             self.progress_label.config(text='Finishing up...')
+            self.update_idletasks()
+            subprocess.run([ffmpeg_path, '-i', f"{self.directory}/video.mp4", '-i', f"{self.directory}/audio.mp4", '-c:v', 'copy', '-c:a', 'aac', '-strict', 'experimental', f"{self.directory}/{self.yt.title}.mp4" ], check=True)
             os.chdir(self.directory)
-            os.system(f"ffmpeg -i video.mp4 -i audio.mp4 -c:v copy -c:a aac -shortest '{self.yt.title}.mp4'")
             if os.name == 'posix':
                 os.system('rm video.mp4 audio.mp4')
             else:
